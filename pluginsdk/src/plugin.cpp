@@ -35,11 +35,11 @@ static struct TS3Functions ts3Functions;
 #define _strcpy(dest, destSize, src) { strncpy(dest, src, destSize-1); (dest)[destSize-1] = '\0'; }
 #endif
 
-#define PLUGIN_API_VERSION 20
+#define PLUGIN_API_VERSION 22
 
 #define PATH_BUFSIZE 512
 #define COMMAND_BUFSIZE 128
-#define INFODATA_BUFSIZE 250
+#define INFODATA_BUFSIZE 7000
 #define SERVERINFO_BUFSIZE 256
 #define CHANNELINFO_BUFSIZE 512
 #define RETURNCODE_BUFSIZE 128
@@ -466,6 +466,30 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 		strcat(infodata, "\nPhonetic Nickname = ");
 		strcat(infodata, buffer); // copy a the Client phonetic Nickname into infodata	
 	
+	//version sign
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_VERSION_SIGN, &buffer) != ERROR_ok) {// copy the Client pheotic nickname into buffer
+			printf("Error getting CLIENT_VERSION_SIGN\n");
+			return;
+		}
+		strcat(infodata, "\nClient Version Sign = ");
+		strcat(infodata, buffer); // copy a the Client version sign into infodata	
+
+	//badgetid
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_BADGES, &buffer) != ERROR_ok) {// copy the Client pheotic nickname into buffer
+			printf("Error getting CLIENT_BADGES\n");
+			return;
+		}
+		strcat(infodata, "\nClient BadgetID = ");
+		strcat(infodata, buffer); // copy a the CLIENT_BADGES into infodata
+
+		//meta data
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_META_DATA, &buffer) != ERROR_ok) {// copy the Client CLIENT_META_DATA nickname into buffer
+			printf("Error getting CLIENT_META_DATA\n");
+			return;
+		}
+		strcat(infodata, "\nClient metadata = ");
+		strcat(infodata, buffer); // copy a the CLIENT_CLIENT_META_DATA into infodata
+
 			break;
 		
 		default:

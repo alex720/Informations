@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+/pluginsdk/src/.vs/test_plugin/v15/Browse.VC.db
+*.opendb
+*.tlog
+*.pdb
+*.log
+*.exp
+*.ilk
