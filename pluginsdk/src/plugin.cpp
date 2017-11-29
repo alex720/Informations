@@ -25,7 +25,6 @@
 #include <sstream>
 #include <thread>
 
-
 static struct TS3Functions ts3Functions;
 
 #ifdef _WIN32
@@ -70,14 +69,14 @@ const char* ts3plugin_name() {
 	/* TeamSpeak expects UTF-8 encoded characters. Following demonstrates a possibility how to convert UTF-16 wchar_t into UTF-8. */
 	static char* result = NULL;  /* Static variable so it's allocated only once */
 	if(!result) {
-		const wchar_t* name = L"Informations";
+		const wchar_t* name = L"Too Much Informations";
 		if(wcharToUtf8(name, &result) == -1) {  /* Convert name into UTF-8 encoded result */
-			result = "Informations";  /* Conversion failed, fallback here */
+			result = "Too Much Informations";  /* Conversion failed, fallback here */
 		}
 	}
 	return result;
 #else
-	return "Informations";
+	return "Too Much Informations";
 #endif
 }
 
@@ -100,7 +99,7 @@ const char* ts3plugin_author() {
 /* Plugin description */
 const char* ts3plugin_description() {
 	/* If you want to use wchar_t, see ts3plugin_name() on how to use */
-    return "ganz viele Daten";
+    return "Too Much Informations";
 }
 
 /* Set TeamSpeak 3 callback functions */
@@ -221,20 +220,50 @@ const char* ts3plugin_infoTitle() {
  * "data" to NULL to have the client ignore the info data.
  */
 
+std::string getChannelCodec(int a) {
+
+	switch (a) {
+	case CODEC_SPEEX_NARROWBAND:
+		return std::string("CODEC_SPEEX_NARROWBAND");
+		break;
+	case CODEC_SPEEX_WIDEBAND:
+		return std::string("CODEC_SPEEX_WIDEBAND");
+		break;
+	case CODEC_SPEEX_ULTRAWIDEBAND:
+		return std::string("CODEC_SPEEX_ULTRAWIDEBAND");
+		break;
+	case CODEC_CELT_MONO:
+		return std::string("CODEC_CELT_MONO");
+		break;
+	case CODEC_OPUS_VOICE:
+		return std::string("CODEC_OPUS_VOICE");
+		break;
+	case CODEC_OPUS_MUSIC:
+		return std::string("CODEC_OPUS_MUSIC");
+		break;
+	default:
+		return std::string("error");
+		break;
+	}
+}
+
+template <typename T>
+std::string convertoString(T a) {
+	return std::to_string(a);
+}
+
 void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum PluginItemType type, char** data) {
-	char* name = "";
-	char infodata[INFODATA_BUFSIZE] = ""; 
-	char* buffer = "";
-	int buffer2 = 0;
-	std::stringstream stream;
-	std::string strValue;
-	const char * buffer5;
-	uint64 buffer6;
-	double buffer9;
+	std::string infodata = ""; 
+	char *buffer = "";
+	int bufferInt = 0;
+	uint64 bufferUInt = 0;
+	double bufferD = 0;
+
+	
 
 	/* For demonstration purpose, display the name of the currently selected server, channel or client. */
 	switch (type) {
-	case PLUGIN_SERVER:
+	case PLUGIN_SERVER: {
 		//myid
 		anyID myid;
 		ts3Functions.getClientID(serverConnectionHandlerID, &myid);
@@ -246,10 +275,10 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 
 		}
 		else {
+			infodata += "ServerUID = ";
+			infodata += buffer;// copy the VIRTUALSERVER_UNIQUE_IDENTIFIER into infodata
+			infodata += "\n";// copy a return into infodata
 
-			strcat(infodata, "ServerUID = ");
-			strcat(infodata, buffer);// copy a the VIRTUALSERVER_UNIQUE_IDENTIFIER into infodata
-			strcat(infodata, "\n");// copy a return into infodata
 
 		}
 
@@ -257,82 +286,65 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 		//VIRTUALSERVER_ID
 		//ts3Functions.requestServerVariables(serverConnectionHandlerID);
 
-		if (ts3Functions.getServerVariableAsUInt64(serverConnectionHandlerID, VIRTUALSERVER_ID, &buffer6) != ERROR_ok) {
+		if (ts3Functions.getServerVariableAsUInt64(serverConnectionHandlerID, VIRTUALSERVER_ID, &bufferUInt) != ERROR_ok) {
 			printf("Error getting VIRTUALSERVER_ID\n");
 
 		}
 
 		else {
 
-			strcat(infodata, "Virtualserver ID = ");
-			stream << buffer6;
-			strValue = stream.str();
-			buffer5 = strValue.c_str();
-			strcat(infodata, buffer5);// copy a the VIRTUALSERVER_ID into infodata
-			strcat(infodata, "\n");// copy a return into infodata
+			infodata += "Virtualserver ID = ";
+			infodata += convertoString<uint64>(bufferUInt);// copy the VIRTUALSERVER_ID into infodata
+			infodata += "\n";// copy a return into infodata
+
 		}
 
-			//CONNECTION_INFO
+		//CONNECTION_INFO
 		if (ts3Functions.requestConnectionInfo(serverConnectionHandlerID, myid, NULL) != ERROR_ok) {
 			printf("Error getting ConnectionInfo\n");
 
 		}
+
 		if (ts3Functions.getConnectionVariableAsString(serverConnectionHandlerID, myid, CONNECTION_SERVER_IP, &buffer) != ERROR_ok) {
 			printf("Error getting Connection Server IP\n");
 		}
 
 		else {
-			strcat(infodata, "Serverip = ");
+			infodata += "Serverip = ";
+			infodata += buffer; // copy the Serverip into infodata
+			infodata += "\n";// copy a return into infodata
 
-			strcat(infodata, buffer); // copy a the Serverip into infodata
-
-			ts3Functions.cleanUpConnectionInfo(serverConnectionHandlerID, id);
-			//	strcat(infodata, "\n"); // copy a return into infodata
 		}
 
-
 		//port
-		if (ts3Functions.getServerVariableAsInt(serverConnectionHandlerID, VIRTUALSERVER_PORT, &buffer2) != ERROR_ok) {
+		if (ts3Functions.getServerVariableAsInt(serverConnectionHandlerID, VIRTUALSERVER_PORT, &bufferInt) != ERROR_ok) {
 			printf("Error getting Virtualserver Port\n");
 
 		}
 		else {
-
-			strcat(infodata, "\nVirtualserver Port = ");
-			sprintf(buffer, "%d", buffer2);// transform the VIRTUALSERVER_PORT int to a char*
-			strcat(infodata, buffer);// copy a the VIRTUALSERVER_PORT into infodata
-			//strcat(infodata, "\n");// copy a return into infodata
+			infodata += "Virtualserver Port = ";
+			infodata += convertoString<int>(bufferInt);// copy the VIRTUALSERVER_PORT into infodata
+			//infodata += "\n";// copy a return into infodata
 		}
-
-
 		break;
-	case PLUGIN_CHANNEL:
-
-
+	}
+	case PLUGIN_CHANNEL: {
 		//channelid
-		strcat(infodata, "Channel ID = ");
-		stream << id;
-		strValue = stream.str();
-		buffer5 = strValue.c_str();
-
-		strcat(infodata, buffer5);// copy a the ClientID into infodata
-		strcat(infodata, "\n");// copy a return into infodata
+		infodata += "Channel ID = ";
+		infodata += convertoString<uint64>(id); // copy the ChannelID into infodata
+		infodata += "\n";// copy a return into infodata
 
 
-		//channelsortID
+		//channelOrderID
 
-		if (ts3Functions.getChannelVariableAsUInt64(serverConnectionHandlerID, id, CHANNEL_ORDER, &buffer6) != ERROR_ok) {
+		if (ts3Functions.getChannelVariableAsUInt64(serverConnectionHandlerID, id, CHANNEL_ORDER, &bufferUInt) != ERROR_ok) {
 			printf("Error getting CHANNEL ORDER ID \n");
 
 		}
 		else {
-
-			strcat(infodata, "Order ID = ");
-			stream << buffer6;
-			strValue = stream.str();
-			buffer5 = strValue.c_str();
-			strcat(infodata, buffer5);// copy a the CHANNEL_ORDER into infodata
-			strcat(infodata, "\n");// copy a return into infodata
+			infodata += "Order ID = ";
+			infodata += convertoString<uint64>(bufferUInt);// copy the CHANNEL_ORDER into infodata
+			infodata += "\n";// copy a return into infodata
 
 		}
 
@@ -342,166 +354,575 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			printf("Error getting CHANNEL_NAME_PHONETIC\n");
 
 		}
+
 		else {
-
-			strcat(infodata, "CHANNEL_NAME_PHONETIC = ");
-			strcat(infodata, buffer);// copy a the CHANNEL_NAME_PHONETIC into infodata
-			strcat(infodata, "\n");// copy a return into infodata
-
+			infodata += "Phoetic Channelname = ";
+			infodata += buffer;// copy the CHANNEL_NAME_PHONETIC into infodata
+			infodata += "\n";// copy a return into infodata
 		}
+		/*
+		//channelcodec
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_CODEC_QUALITY, &bufferInt) != ERROR_ok) {
+			printf("Error getting Channel Code\n");
+		}
+		else {
+			infodata += "Channel Codec = ";
+			infodata += getChannelCodec(bufferInt);// copy the Channel Codec into infodata
+			infodata += "\n";// copy a return into infodata
 
+		}*/
 
 		//channelcodec qualität
-		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_CODEC_QUALITY, &buffer2) != ERROR_ok) {
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_CODEC_QUALITY, &bufferInt) != ERROR_ok) {
 			printf("Error getting Codec Quality\n");
 		}
 		else {
-			strcat(infodata, "Codec Quality = ");
-			sprintf(buffer, "%d", buffer2);// transform the Codec Quality int to a char*
-			strcat(infodata, buffer);// copy a the Codec Quality into infodata
-				 //strcat(infodata, "\n");// copy a return into infodata
+			infodata += "Codec Quality = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
 
 		}
 
+		//CHANNEL_FLAG_PERMANENT
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_PERMANENT, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_PERMANENT\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_PERMANENT = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+
+		}
+		//CHANNEL_FLAG_SEMI_PERMANENT
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_SEMI_PERMANENT, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_SEMI_PERMANENT\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_SEMI_PERMANENT = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+
+		}
+		//CHANNEL_FLAG_DEFAULT
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_DEFAULT, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_DEFAULT\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_DEFAULT = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_PASSWORD
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_PASSWORD, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_PASSWORD\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_PASSWORD = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_CODEC_LATENCY_FACTOR
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_CODEC_LATENCY_FACTOR, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_CODEC_LATENCY_FACTOR\n");
+		}
+		else {
+			infodata += "CHANNEL_CODEC_LATENCY_FACTOR = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_CODEC_IS_UNENCRYPTED
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_CODEC_IS_UNENCRYPTED, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_CODEC_IS_UNENCRYPTED\n");
+		}
+		else {
+			infodata += "CHANNEL_CODEC_IS_UNENCRYPTED = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_DELETE_DELAY
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_DELETE_DELAY, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_DELETE_DELAY\n");
+		}
+		else {
+			infodata += "CHANNEL_DELETE_DELAY = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_MAXCLIENTS_UNLIMITED
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_MAXCLIENTS_UNLIMITED, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_MAXCLIENTS_UNLIMITED\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_MAXCLIENTS_UNLIMITED = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_MAXFAMILYCLIENTS_UNLIMITED
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_MAXFAMILYCLIENTS_UNLIMITED, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_MAXFAMILYCLIENTS_UNLIMITED\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_MAXFAMILYCLIENTS_UNLIMITED = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_MAXFAMILYCLIENTS_INHERITED
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_MAXFAMILYCLIENTS_INHERITED, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_MAXFAMILYCLIENTS_INHERITED\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_MAXFAMILYCLIENTS_INHERITED = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_ARE_SUBSCRIBED
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_ARE_SUBSCRIBED, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_ARE_SUBSCRIBED\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_ARE_SUBSCRIBED = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_NEEDED_TALK_POWER
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_NEEDED_TALK_POWER, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_NEEDED_TALK_POWER\n");
+		}
+		else {
+			infodata += "CHANNEL_NEEDED_TALK_POWER = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FORCED_SILENCE
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FORCED_SILENCE, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FORCED_SILENCE\n");
+		}
+		else {
+			infodata += "CHANNEL_FORCED_SILENCE = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_ICON_ID
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_ICON_ID, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_ICON_ID\n");
+		}
+		else {
+			infodata += "CHANNEL_ICON_ID = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CHANNEL_FLAG_PRIVATE
+		if (ts3Functions.getChannelVariableAsInt(serverConnectionHandlerID, id, CHANNEL_FLAG_PRIVATE, &bufferInt) != ERROR_ok) {
+			printf("Error getting CHANNEL_FLAG_PRIVATE\n");
+		}
+		else {
+			infodata += "CHANNEL_FLAG_PRIVATE = ";
+			infodata += convertoString<int>(bufferInt);// copy the Codec Quality into infodata
+			//infodata += "\n";// copy a return into infodata
+		}
 
 		break;
-	case PLUGIN_CLIENT:
-	
-		//std::thread client_plugin(update_client_infos_thread, serverConnectionHandlerID, id, &data);
-		//client_plugin.detach();
-		//return;
-	
-	
-			
-	
-	//ConnectionInfo
-
-	if (ts3Functions.requestConnectionInfo(serverConnectionHandlerID, (anyID)id, NULL) != ERROR_ok) {
-		printf("Error getting ConnectionInfo\n");
-
 	}
+	case PLUGIN_CLIENT: {
+		//ConnectionInfo
 
-	// Client data
-	//ClientID
+		if (ts3Functions.requestConnectionInfo(serverConnectionHandlerID, (anyID)id, NULL) != ERROR_ok) {
+			printf("Error getting ConnectionInfo\n");
 
-	strcat(infodata, "Client ID = ");
+		}
 
-	stream << id;
-	strValue = stream.str();
-	buffer5 = strValue.c_str();
+		// Client data
+		//ClientID
 
-	strcat(infodata, buffer5);// copy a the ClientID into infodata
-	strcat(infodata, "\n");// copy a return into infodata
+		infodata += "Client ID = ";
+		infodata += convertoString<uint64>(id);// copy the ClientID into infodata
+		infodata += "\n";// copy a return into infodata
 
-	//CLIENT_UNIQUE_IDENTIFIER
-	if(ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_UNIQUE_IDENTIFIER, &buffer) != ERROR_ok) {// copy a the UID into buffer
-		printf("Error getting client UID\n");
+		//CLIENT_UNIQUE_IDENTIFIER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_UNIQUE_IDENTIFIER, &buffer) != ERROR_ok) {
+			printf("Error getting client UID\n");
 
-	}
-	else {
-
-		strcat(infodata, "UID = ");
-		strcat(infodata, buffer); // copy a the UID into infodata
-		strcat(infodata, "\n"); // copy a return into infodata
-	}
-	//clientdatabaseID
-		if (ts3Functions.getClientVariableAsInt(serverConnectionHandlerID, (anyID)id, CLIENT_DATABASE_ID, &buffer2) != ERROR_ok) {// copy the DBID into the buffer2
+		}
+		else {
+			infodata += "UID = ";
+			infodata += buffer;// copy the UID into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//clientdatabaseID
+		if (ts3Functions.getClientVariableAsInt(serverConnectionHandlerID, (anyID)id, CLIENT_DATABASE_ID, &bufferInt) != ERROR_ok) {
 			printf("Error getting client DatabaseID\n");
 
 		}
 		else {
-			strcat(infodata, "DBID = ");
-			sprintf(buffer, "%d", buffer2);// transform the DBID int to a char*
-			strcat(infodata, buffer);// copy a the DBID into infodata
-			strcat(infodata, "\n");// copy a return into infodata
+			infodata += "DBID = ";
+			infodata += convertoString<int>(bufferInt);// copy the DBID into infodata
+			infodata += "\n";// copy a return into infodata
 		}
 
 
 		//ClientServergroups
-		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_SERVERGROUPS, &buffer) != ERROR_ok) {// copy all Servergroupids into the buffer
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_SERVERGROUPS, &buffer) != ERROR_ok) {
 			printf("Error getting client Servergroups\n");
 		}
 		else {
 
-				strcat(infodata, "ServGroups = ");
-				strncat(infodata, buffer, 40);// copy a the servergroupids into infodata 
-				strcat(infodata, "\n");// copy a return into infodata
+			infodata += "ServerGroups = ";
+			infodata += buffer;// copy the servergroupids into infodata
+			infodata += "\n";// copy a return into infodata
 
 		}
-		
+
 
 		//totalConnections
-		if (ts3Functions.getClientVariableAsInt(serverConnectionHandlerID, (anyID)id, CLIENT_TOTALCONNECTIONS, &buffer2) != ERROR_ok) {// copy the TotalConnections into the buffer2
+		if (ts3Functions.getClientVariableAsInt(serverConnectionHandlerID, (anyID)id, CLIENT_TOTALCONNECTIONS, &bufferInt) != ERROR_ok) {
 			printf("Error getting client TOTALCONNECTIONS\n");
 
 		}
 		else {
-			strcat(infodata, "AllConnects = ");
-			sprintf(buffer, "%d", buffer2);// transform the TotalConnections int to a char*
-			strcat(infodata, buffer);// copy a the totalconnections into infodata
-									
+			infodata += "Total Connections = ";
+			infodata += convertoString<int>(bufferInt);// copy the totalconnections into infodata
+			infodata += "\n";// copy a return into infodata						
 		}
 
 
 		//Ping
-		if (ts3Functions.getConnectionVariableAsDouble(serverConnectionHandlerID, (anyID)id, CONNECTION_PING, &buffer9) != ERROR_ok) {
+		Sleep(115);
+		if (ts3Functions.getConnectionVariableAsDouble(serverConnectionHandlerID, (anyID)id, CONNECTION_PING, &bufferD) != ERROR_ok) {
 			printf("Error getting client Ping\n");
 		}
 
 		else {
-			
-			sprintf(buffer, "%d", (int)buffer9);// transform the ping int to a char*
-			strcat(infodata, "\nPing = ");
-			strcat(infodata, buffer); // copy a the PING into infodata
-			ts3Functions.cleanUpConnectionInfo(serverConnectionHandlerID, (anyID)id);
-		//	strcat(infodata, "\n"); // copy a return into infodata
+
+
+			infodata += "Ping = ";
+			infodata += convertoString<int>((int)bufferD); // cast to int to lost .00000   copy the PING into infodata
+			infodata += "\n";// copy a return into infodata	
 		}
 
 
-	//pheotischername
-		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_NICKNAME_PHONETIC, &buffer) != ERROR_ok) {// copy the Client pheotic nickname into buffer
+		//pheotischername
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_NICKNAME_PHONETIC, &buffer) != ERROR_ok) {
 			printf("Error getting CLIENT_NICKNAME_PHONETIC\n");
-			return;
+		
 		}
-		strcat(infodata, "\nPhonetic Nickname = ");
-		strcat(infodata, buffer); // copy a the Client phonetic Nickname into infodata	
-	
-	//version sign
-		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_VERSION_SIGN, &buffer) != ERROR_ok) {// copy the Client pheotic nickname into buffer
-			printf("Error getting CLIENT_VERSION_SIGN\n");
-			return;
-		}
-		strcat(infodata, "\nClient Version Sign = ");
-		strcat(infodata, buffer); // copy a the Client version sign into infodata	
+		infodata += "Phonetic Nickname = ";
+		infodata += buffer;// copy the Client phonetic Nickname into infodata
+		infodata += "\n";// copy a return into infodata	
 
-	//badgetid
-		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_BADGES, &buffer) != ERROR_ok) {// copy the Client pheotic nickname into buffer
-			printf("Error getting CLIENT_BADGES\n");
-			return;
+	//version sign
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_VERSION_SIGN, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_VERSION_SIGN\n");
+		
 		}
-		strcat(infodata, "\nClient BadgetID = ");
-		strcat(infodata, buffer); // copy a the CLIENT_BADGES into infodata
+		else {
+			infodata += "Client Version Sign = ";
+			infodata += buffer;// copy the Client version sign into infodata	
+			infodata += "\n";// copy a return into infodata	
+		}
+	//badgetid
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_BADGES, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_BADGES\n");
+		
+		}
+		else {
+			infodata += "Client BadgetIDs = ";
+			infodata += buffer;// copy the CLIENT_BADGES into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		 //CLIENT_FLAG_TALKING
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_FLAG_TALKING, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_FLAG_TALKING\n");
+		
+		}
+		else {
+			infodata += "CLIENT_FLAG_TALKING = ";
+			infodata += buffer;// copy the CLIENT_FLAG_TALKING into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		 //CLIENT_INPUT_MUTED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_INPUT_MUTED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_INPUT_MUTED\n");
+		
+		}
+		else {
+			infodata += "CLIENT_INPUT_MUTED = ";
+			infodata += buffer;// copy the CLIENT_INPUT_MUTED into infodata
+			infodata += "\n";// copy a return into infodata	
+		}
+
+		//CLIENT_OUTPUT_MUTED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_OUTPUT_MUTED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_OUTPUT_MUTED\n");
+		
+		}
+		else {
+			infodata += "CLIENT_OUTPUT_MUTED = ";
+			infodata += buffer;// copy the CLIENT_OUTPUT_MUTED into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CLIENT_OUTPUTONLY_MUTED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_OUTPUTONLY_MUTED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_OUTPUTONLY_MUTED\n");
+		
+		}
+		else {
+			infodata += "CLIENT_OUTPUTONLY_MUTED = ";
+			infodata += buffer;// copy the CLIENT_OUTPUTONLY_MUTED into infodata
+			infodata += "\n";// copy a return into infodata
+		}
+		//CLIENT_INPUT_HARDWARE
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_INPUT_HARDWARE, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_INPUT_HARDWARE\n");
+			
+		}
+		else {
+			infodata += "CLIENT_INPUT_HARDWARE = ";
+			infodata += buffer;// copy the CLIENT_INPUT_HARDWARE into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_OUTPUT_HARDWARE
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_OUTPUT_HARDWARE, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_OUTPUT_HARDWARE\n");
+			
+		}
+		else {
+			infodata += "CLIENT_OUTPUT_HARDWARE = ";
+			infodata += buffer;// copy the CLIENT_OUTPUT_HARDWARE into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		 //CLIENT_IS_RECORDING
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_IS_RECORDING, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_IS_RECORDING\n");
+			
+		}
+		else {
+			infodata += "CLIENT_IS_RECORDING = ";
+			infodata += buffer;// copy the CLIENT_IS_RECORDING into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_CHANNEL_GROUP_ID
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_CHANNEL_GROUP_ID, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_CHANNEL_GROUP_ID\n");
+			
+		}
+		else {
+			infodata += "CLIENT_CHANNEL_GROUP_ID = ";
+			infodata += buffer;// copy the CLIENT_CHANNEL_GROUP_ID into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		
+		//CLIENT_CREATED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_CREATED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_CREATED\n");
+			
+		}
+		else {
+			infodata += "CLIENT_CREATED = ";
+			infodata += buffer;// copy the CLIENT_CREATED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+
+		//CLIENT_LASTCONNECTED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_LASTCONNECTED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_LASTCONNECTED\n");
+
+		}
+		else {
+			infodata += "CLIENT_LASTCONNECTED = ";
+			infodata += buffer;// copy the CLIENT_LASTCONNECTED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_AWAY
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_AWAY, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_AWAY\n");
+
+		}
+		else {
+			infodata += "CLIENT_AWAY = ";
+			infodata += buffer;// copy the CLIENT_AWAY into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_AWAY_MESSAGE
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_AWAY_MESSAGE, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_AWAY_MESSAGE\n");
+
+		}
+		else {
+			infodata += "CLIENT_AWAY_MESSAGE = ";
+			infodata += buffer;// copy the CLIENT_AWAY_MESSAGE into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_TYPE
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_TYPE, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_TYPE\n");
+
+		}
+		else {
+			infodata += "CLIENT_TYPE = ";
+			infodata += buffer;// copy the CLIENT_TYPE into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_FLAG_AVATAR
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_FLAG_AVATAR, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_FLAG_AVATAR\n");
+
+		}
+		else {
+			infodata += "CLIENT_FLAG_AVATAR = ";
+			infodata += buffer;// copy the CLIENT_FLAG_AVATAR into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_TALK_POWER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_TALK_POWER, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_TALK_POWER\n");
+
+		}
+		else {
+			infodata += "CLIENT_TALK_POWER = ";
+			infodata += buffer;// copy the CLIENT_TALK_POWER into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_IS_TALKER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_IS_TALKER, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_IS_TALKER\n");
+
+		}
+		else {
+			infodata += "CLIENT_IS_TALKER = ";
+			infodata += buffer;// copy the CLIENT_IS_TALKER into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_MONTH_BYTES_UPLOADED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_MONTH_BYTES_UPLOADED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_MONTH_BYTES_UPLOADED\n");
+
+		}
+		else {
+			infodata += "CLIENT_MONTH_BYTES_UPLOADED = ";
+			infodata += buffer;// copy the CLIENT_MONTH_BYTES_UPLOADED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_MONTH_BYTES_DOWNLOADED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_MONTH_BYTES_DOWNLOADED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_MONTH_BYTES_DOWNLOADED\n");
+
+		}
+		else {
+			infodata += "CLIENT_MONTH_BYTES_DOWNLOADED = ";
+			infodata += buffer;// copy the CLIENT_MONTH_BYTES_DOWNLOADED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_TOTAL_BYTES_UPLOADED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_TOTAL_BYTES_UPLOADED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_TOTAL_BYTES_UPLOADED\n");
+
+		}
+		else {
+			infodata += "CLIENT_TOTAL_BYTES_UPLOADED = ";
+			infodata += buffer;// copy the CLIENT_TOTAL_BYTES_UPLOADED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_TOTAL_BYTES_DOWNLOADED
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_TOTAL_BYTES_DOWNLOADED, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_TOTAL_BYTES_DOWNLOADED\n");
+
+		}
+		else {
+			infodata += "CLIENT_TOTAL_BYTES_DOWNLOADED = ";
+			infodata += buffer;// copy the CLIENT_TOTAL_BYTES_DOWNLOADED into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_IS_PRIORITY_SPEAKER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_IS_PRIORITY_SPEAKER, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_IS_PRIORITY_SPEAKER\n");
+
+		}
+		else {
+			infodata += "CLIENT_IS_PRIORITY_SPEAKER = ";
+			infodata += buffer;// copy the CLIENT_IS_PRIORITY_SPEAKER into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_UNREAD_MESSAGES
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_UNREAD_MESSAGES, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_UNREAD_MESSAGES\n");
+
+		}
+		else {
+			infodata += "CLIENT_UNREAD_MESSAGES = ";
+			infodata += buffer;// copy the CLIENT_UNREAD_MESSAGES into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_NEEDED_SERVERQUERY_VIEW_POWER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_NEEDED_SERVERQUERY_VIEW_POWER, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_NEEDED_SERVERQUERY_VIEW_POWER\n");
+
+		}
+		else {
+			infodata += "CLIENT_NEEDED_SERVERQUERY_VIEW_POWER = ";
+			infodata += buffer;// copy the CLIENT_NEEDED_SERVERQUERY_VIEW_POWER into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_ICON_ID
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_ICON_ID, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_ICON_ID\n");
+
+		}
+		else {
+			infodata += "CLIENT_ICON_ID = ";
+			infodata += buffer;// copy the CLIENT_ICON_ID into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_IS_CHANNEL_COMMANDER
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_IS_CHANNEL_COMMANDER, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_IS_CHANNEL_COMMANDER\n");
+
+		}
+		else {
+			infodata += "CLIENT_IS_CHANNEL_COMMANDER = ";
+			infodata += buffer;// copy the CLIENT_IS_CHANNEL_COMMANDER into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_COUNTRY
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_COUNTRY, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_COUNTRY\n");
+
+		}
+		else {
+			infodata += "CLIENT_COUNTRY = ";
+			infodata += buffer;// copy the CLIENT_COUNTRY into infodata
+			infodata += "\n";// copy a return into infodat
+		}
+		//CLIENT_CHANNEL_GROUP_INHERITED_CHANNEL_ID
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_CHANNEL_GROUP_INHERITED_CHANNEL_ID, &buffer) != ERROR_ok) {
+			printf("Error getting CLIENT_CHANNEL_GROUP_INHERITED_CHANNEL_ID\n");
+
+		}
+		else {
+			infodata += "CLIENT_CHANNEL_GROUP_INHERITED_CHANNEL_ID = ";
+			infodata += buffer;// copy the CLIENT_CHANNEL_GROUP_INHERITED_CHANNEL_ID into infodata
+			infodata += "\n";// copy a return into infodat
+		}
 
 		//meta data
-		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_META_DATA, &buffer) != ERROR_ok) {// copy the Client CLIENT_META_DATA nickname into buffer
+		if (ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_META_DATA, &buffer) != ERROR_ok) {
 			printf("Error getting CLIENT_META_DATA\n");
-			return;
+			
 		}
-		strcat(infodata, "\nClient metadata = ");
-		strcat(infodata, buffer); // copy a the CLIENT_CLIENT_META_DATA into infodata
-
-			break;
-		
+		else {
+			infodata += "Client metadata = ";
+			infodata += buffer; // copy a the CLIENT_CLIENT_META_DATA into infodata
+			//infodata += "\n";// copy a return into infodata
+		}
+		break;
+	}
 		default:
 			printf("Invalid item type: %d\n", type);
 			data = NULL;  /* Ignore */
 			return;
 	}
 	/* Must be allocated in the plugin! */
-	*data = (char*)malloc(INFODATA_BUFSIZE * sizeof(char));
-	snprintf(*data, INFODATA_BUFSIZE, infodata);
-
-
+	*data = (char*)malloc((infodata.length() + 1)* sizeof(char));
+	snprintf(*data, (infodata.length() + 1), infodata.c_str());
 }
 
 /* Required to release the memory for parameter "data" allocated in ts3plugin_infoData and ts3plugin_initMenus */
