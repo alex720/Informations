@@ -20,9 +20,7 @@
 #include "teamspeak/clientlib_publicdefinitions.h"
 #include "ts3_functions.h"
 #include "plugin.h"
-#include <iostream>
 #include <string>
-#include <sstream>
 #include <thread>
 
 static struct TS3Functions ts3Functions;
@@ -34,7 +32,8 @@ static struct TS3Functions ts3Functions;
 #define _strcpy(dest, destSize, src) { strncpy(dest, src, destSize-1); (dest)[destSize-1] = '\0'; }
 #endif
 
-#define PLUGIN_API_VERSION 22
+#define PLUGIN_API_VERSION 23
+#define PLUGIN_VERSION "1"
 
 #define PATH_BUFSIZE 512
 #define COMMAND_BUFSIZE 128
@@ -82,7 +81,7 @@ const char* ts3plugin_name() {
 
 /* Plugin version */
 const char* ts3plugin_version() {
-    return "1";
+    return PLUGIN_VERSION;
 }
 
 /* Plugin API version. Must be the same as the clients API major version, else the plugin fails to load. */
